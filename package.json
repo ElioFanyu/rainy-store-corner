@@ -1,0 +1,14 @@
+{
+  "name": "rainy-store-corner",
+  "version": "1.0.0",
+  "description": "Rainy night Japanese convenience store corner diorama",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true
+}
