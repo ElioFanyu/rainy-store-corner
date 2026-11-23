@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { createArt, ease } from './core.js';
+import { createArt, ease, syncOutlineAspect } from './core.js';
 import { Builder } from './build.js';
 import { buildStreet } from './street.js';
 import { buildStore } from './store.js';
@@ -13,6 +13,7 @@ import { buildAlley } from './alley.js';
 import { buildProps } from './props.js';
 import { buildLights } from './lights.js';
 import { buildEffects } from './effects.js';
+import { Walker, createHUD } from './walk.js';
 
 /* ------------------------------------------------------------------ *
  *  雨夜便利店街角 · 微缩模型
@@ -87,6 +88,7 @@ controls.autoRotateSpeed = 0.3;
 controls.update();
 
 const art = createArt();
+syncOutlineAspect(window.innerWidth / window.innerHeight);
 const builder = new Builder();
 const env = { THREE, scene, root: scene, art, builder, camera, renderer };
 
@@ -98,6 +100,116 @@ buildLights(env);
 const effects = buildEffects(env);
 
 builder.prepare();
+
+/* --------------------------- 漫游与交互 --------------------------- */
+const hud = createHUD();
+const walker = new Walker(env, {
+  onEnter() {
+    controls.enabled = false;
+    controls.autoRotate = false;
+    introActive = false;
+    hud.show(true);
+    hud.message('按 Esc 回到微缩模型视角', 3200);
+    // 第一人称贴近物体，降低曝光避免发白
+    renderer.toneMappingExposure = 0.82;
+    bloom.strength = 0.3;
+  },
+  onExit() {
+    controls.enabled = true;
+    hud.show(false);
+    renderer.toneMappingExposure = 0.95;
+    bloom.strength = 0.42;
+    hud.clearMessage();
+    if (document.pointerLockElement) document.exitPointerLock();
+    // 回到总览机位
+    camera.position.copy(FINAL_CAM);
+    controls.target.set(-0.35, 1.55, 0.0);
+    if (walker.active) {
+    walker.update(dt);
+  } else {
+    controls.update();
+  }
+    lastInteraction = performance.now();
+  },
+  onPrompt(it) { hud.setPrompt(it); },
+  onMessage(text) { hud.message(text); },
+});
+env.walker = walker;
+env.hud = hud;
+
+// 给场景里的可交互物挂上真实动作
+wireInteractions(env, walker);
+
+function wireInteractions(env, walker) {
+  const parts = env.storeParts || {};
+  const spots = env.interactables || [];
+  const byId = Object.fromEntries(spots.map((s) => [s.id, s]));
+  let basket = [];
+  let bill = 0;
+
+  const addToCart = (name, price) => {
+    basket.push({ name, price });
+    bill += price;
+    if (parts.posScreen) {
+      parts.posScreen.draw(bill, `${name} ×${basket.length}`);
+    }
+  };
+
+  if (byId.fridge) byId.fridge.action = () => {
+    const names = [['乌龙茶', 4.5], ['蜜桃果汁', 5.5], ['矿泉水', 2.5], ['罐装咖啡', 3.5]];
+    const pick = names[Math.floor(Math.random() * names.length)];
+    addToCart(pick[0], pick[1]);
+    walker.hud && walker.hud.message(`从冷柜里拿了一瓶${pick[0]}（¥${pick[1]}），已放进篮子。`);
+    env.hud && env.hud.message(`从冷柜里拿了一瓶${pick[0]}（¥${pick[1]}），已放进篮子。`);
+  };
+
+  if (byId.shelf) byId.shelf.action = () => {
+    const snacks = [['薯片', 6.0], ['巧克力', 4.0], ['饭团', 5.0], ['速食面', 7.5]];
+    const pick = snacks[Math.floor(Math.random() * snacks.length)];
+    addToCart(pick[0], pick[1]);
+    env.hud && env.hud.message(`货架上拿了一包${pick[0]}（¥${pick[1]}）。`);
+  };
+
+  if (byId.counter) byId.counter.action = () => {
+    if (basket.length === 0) {
+      env.hud && env.hud.message('篮子还是空的，先去货架上拿点东西吧。');
+      return;
+    }
+    const list = basket.map((b) => b.name).join('、');
+    env.hud && env.hud.message(`结账完成：${list}，合计 ¥${bill.toFixed(1)}。谢谢惠顾！`, 3600);
+    basket = [];
+    bill = 0;
+    if (parts.posScreen) parts.posScreen.draw(0, '欢迎再来');
+  };
+
+  if (byId.hot) byId.hot.action = () => {
+    const lid = parts.hot && parts.hot.userData.lid;
+    if (lid) {
+      const open = !lid.userData.open;
+      lid.userData.open = open;
+      lid.rotation.x = open ? -0.9 : 0;
+    }
+    env.hud && env.hud.message('掀开热食柜：关东煮、炸鸡、热狗都还冒着热气。');
+  };
+
+  if (byId.atm) byId.atm.action = () => {
+    env.hud && env.hud.message('ATM 屏幕闪着蓝光，可你没有银行卡。');
+  };
+
+  if (byId.backShelf) byId.backShelf.action = () => {
+    env.hud && env.hud.message('背柜一整墙的饮料与速食，标签排得整整齐齐。');
+  };
+
+  if (byId.vending) byId.vending.action = () => {
+    env.hud && env.hud.message('投进一枚硬币，「咚」的一声，掉下一罐热咖啡。');
+  };
+  if (byId.bike) byId.bike.action = () => {
+    env.hud && env.hud.message('车筐里有一张揉皱的小票，日期是今天。');
+  };
+  if (byId.board) byId.board.action = () => {
+    env.hud && env.hud.message('公告栏上贴着町内会通知、走失的猫、还有招租广告。');
+  };
+}
 
 /* ------------------------------ 后期 ------------------------------ */
 const composer = new EffectComposer(renderer);
@@ -143,7 +255,18 @@ favicon.href = 'data:image/svg+xml,' + encodeURIComponent(
 document.head.appendChild(favicon);
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'r' || e.key === 'R') window.location.reload();
+  if (e.key === 'Escape') {
+    if (walker.active) walker.exit();
+    return;
+  }
+  if (e.key === 'e' || e.key === 'E') {
+    if (!walker.active && builder.done) {
+      walker.enter();
+      walker.placeAt(-0.08, 1.62, 0);   // 站在店门口，面朝店内（-z 方向）
+    }
+    return;
+  }
+  if ((e.key === 'r' || e.key === 'R') && !walker.active) window.location.reload();
 });
 
 window.addEventListener('resize', () => {
@@ -152,9 +275,9 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
-  composer.setSize(w, h);
-  bloom.setSize(w, h);
+  composer.setSize(w, h);   // composer 会把正确尺寸转发给每个 pass
   effects.resize(h, camera.fov, renderer.getPixelRatio());
+  syncOutlineAspect();
 });
 
 const clock = new THREE.Clock();
@@ -178,7 +301,11 @@ function animate() {
     controls.autoRotate = !introActive && builder.done && idle > 7000;
   }
 
-  controls.update();
+  if (walker.active) {
+    walker.update(dt);
+  } else {
+    controls.update();
+  }
 
   // 轻微呼吸感，让模型像被展示灯照着
   sky.position.copy(camera.position);
@@ -194,7 +321,13 @@ setInterval(() => {
 fetch('/__beat', { cache: 'no-store' }).catch(() => {});
 
 window.__RAINY = {
-  scene, camera, renderer, controls, builder, effects,
+  scene, camera, renderer, controls, builder, effects, walker, hud, env,
+  get storeParts() { return env.storeParts; },
+  enterStore() {
+    walker.enter();
+    walker.placeAt(-0.08, 1.62, 0);
+  },
+  exitStore() { walker.exit(); },
   setTime(t) {
     builder.time = t;
     builder.done = false;
@@ -208,13 +341,21 @@ window.__RAINY = {
     effects.fastForward(12);
     camera.position.copy(FINAL_CAM);
     controls.target.set(-0.35, 1.55, 0.0);
+    if (walker.active) {
+    walker.update(dt);
+  } else {
     controls.update();
+  }
   },
   finalCamera() {
     introActive = false;
     camera.position.copy(FINAL_CAM);
     controls.target.set(-0.35, 1.55, 0.0);
+    if (walker.active) {
+    walker.update(dt);
+  } else {
     controls.update();
+  }
   },
 };
 

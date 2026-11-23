@@ -220,18 +220,18 @@ function posterTexture(seed, accent, headline, sub) {
     ctx.fillStyle = accent;
     ctx.fillRect(0, 0, w, 86);
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '700 40px "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif';
+    ctx.font = '700 40px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(headline, w / 2, 58);
     ctx.fillStyle = '#39332c';
-    ctx.font = '600 26px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '600 26px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText(sub, w / 2, 128);
     ctx.fillStyle = '#d8cfc0';
     for (let i = 0; i < 5; i++) {
       ctx.fillRect(24, 158 + i * 26, 208 - rnd() * 70, 9);
     }
     ctx.fillStyle = accent;
-    ctx.font = '700 30px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '700 30px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText('NEW!', w / 2, 316);
     ctx.strokeStyle = 'rgba(40,36,30,0.25)';
     ctx.lineWidth = 3;
@@ -297,9 +297,9 @@ export function createArt() {
 
   const posters = [
     posterTexture(3, '#1aa7a2', '新発売', '期間限定'),
-    posterTexture(19, '#e0554a', 'SALE', '本日限り'),
-    posterTexture(31, '#4f6fbf', '地域情報', 'お知らせ'),
-    posterTexture(47, '#f0a84a', 'HOT', 'あったか〜い'),
+    posterTexture(19, '#e0554a', 'SALE', '仅限本日'),
+    posterTexture(31, '#4f6fbf', '本地资讯', '公告'),
+    posterTexture(47, '#f0a84a', 'HOT', '暖暖的'),
   ];
 
   return {
@@ -312,19 +312,30 @@ export function createArt() {
 
 /* 几何工具 ---------------------------------------------------------- */
 
+// 所有描边材质共享同一份 aspect 值，窗口尺寸变化时统一更新
+export const outlineMaterials = new Set();
+
+export function syncOutlineAspect(aspect) {
+  for (const mat of outlineMaterials) mat.uniforms.uAspect.value = aspect;
+}
+
 export function addOutline(mesh, thickness = 0.0042, color = 0x0a0e15) {
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uThickness: { value: thickness },
       uColor: { value: new THREE.Color(color) },
+      uAspect: { value: 1.0 },
     },
     vertexShader: /* glsl */`
       uniform float uThickness;
+      uniform float uAspect;
       void main() {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         vec4 clip = projectionMatrix * mv;
         vec3 n = normalize(normalMatrix * normal);
-        clip.xy += n.xy * uThickness * clip.w;
+        // NDC 的 x 跨度对应 width/2 像素，y 对应 height/2，
+        // 乘 uAspect 让描边在任意视口比例下等宽
+        clip.xy += n.xy * uThickness * clip.w * vec2(1.0 / max(uAspect, 0.0001), 1.0);
         gl_Position = clip;
       }
     `,
@@ -336,6 +347,7 @@ export function addOutline(mesh, thickness = 0.0042, color = 0x0a0e15) {
     `,
     side: THREE.BackSide,
   });
+  outlineMaterials.add(mat);
   const outline = new THREE.Mesh(mesh.geometry, mat);
   outline.castShadow = false;
   outline.receiveShadow = false;

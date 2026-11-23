@@ -43,11 +43,11 @@ export function buildLights(env) {
     });
   };
 
-  const interiorA = pt(0xffc37a, 5.6, 9, -2.55, 2.55, -1.0);
-  const interiorB = pt(0xffcf90, 4.9, 8.5, -0.3, 2.55, -2.2);
-  const interiorC = pt(0xffc985, 4.2, 7.5, 1.6, 2.5, -0.4);
-  const interiorD = pt(0xffd9a6, 3.4, 6.5, -0.6, 2.2, 1.1);
-  const interiorE = pt(0xffe3b8, 2.2, 5.0, -2.3, 1.4, -2.2);
+  const interiorA = pt(0xffbe72, 4.6, 9, -2.55, 2.55, -1.0);
+  const interiorB = pt(0xffc98a, 4.0, 8.5, -0.3, 2.55, -2.2);
+  const interiorC = pt(0xffc480, 3.4, 7.5, 1.6, 2.5, -0.4);
+  const interiorD = pt(0xffd39c, 2.7, 6.5, -0.6, 2.2, 1.1);
+  const interiorE = pt(0xffddb0, 1.7, 5.0, -2.3, 1.4, -2.2);
   const canopy = pt(0xffd49a, 1.6, 4.6, -1.35, 2.4, 2.15);
   const vending = pt(0xffa77e, 1.35, 3.4, -4.5, 1.3, 2.35);
   const alley = env.alleyLamp

@@ -14,9 +14,9 @@ function hangSign(title, sub, bg, fg = '#ffffff') {
     ctx.strokeRect(12, 12, w - 24, h - 24);
     ctx.fillStyle = fg;
     ctx.textAlign = 'center';
-    ctx.font = '800 82px "Yu Gothic", "Arial Black", sans-serif';
+    ctx.font = '800 82px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText(title, w / 2, 118);
-    ctx.font = '600 34px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '600 34px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
     ctx.fillText(sub, w / 2, 186);
   });
@@ -33,10 +33,10 @@ function fridgeHeader() {
     ctx.textAlign = 'center';
     ctx.font = '900 62px "Arial Black", sans-serif';
     ctx.fillText('DRINKS', 300, 86);
-    ctx.font = '700 44px "Yu Gothic", sans-serif';
-    ctx.fillText('つめた〜い', 740, 84);
+    ctx.font = '700 44px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('冰镇的', 740, 84);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '600 22px "Yu Gothic", sans-serif';
+    ctx.font = '600 22px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText('COLD BEVERAGE', 300, 116);
   });
 }
@@ -47,8 +47,8 @@ function tobaccoHeader() {
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#f6f2e9';
     ctx.textAlign = 'center';
-    ctx.font = '700 44px "Yu Gothic", sans-serif';
-    ctx.fillText('たばこ  TASSPO', w / 2, 62);
+    ctx.font = '700 44px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('香烟  TASSPO', w / 2, 62);
   });
 }
 
@@ -69,8 +69,8 @@ function atmFace() {
     ctx.font = '600 16px "Arial", sans-serif';
     ctx.fillText('WELCOME', w / 2, 110);
     ctx.fillStyle = '#d7f0ff';
-    ctx.font = '500 13px "Yu Gothic", sans-serif';
-    ctx.fillText('24時間 ご利用いただけます', w / 2, 170);
+    ctx.font = '500 13px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('24 小时 全天候为您服务', w / 2, 170);
     ctx.fillStyle = '#8fe6a8';
     ctx.fillRect(46, 186, 68, 12);
   });
@@ -83,13 +83,13 @@ function magazineCover(seed, bg, accent) {
     ctx.fillStyle = accent;
     ctx.fillRect(0, 0, w, 52);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 34px "Yu Gothic", "Arial Black", sans-serif';
+    ctx.font = '900 34px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(['ANIME', 'CITY', 'GAME', 'MODEL', 'TRAVEL', 'FOOD'][seed % 6], 12, 40);
     ctx.fillStyle = 'rgba(255,255,255,0.22)';
     ctx.fillRect(12, 66, w - 24, h - 130);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '700 24px "Yu Gothic", sans-serif';
+    ctx.font = '700 24px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText(['特集', '新作', '夏号', '保存版'][seed % 4], 16, 110);
     ctx.fillStyle = accent;
     ctx.fillRect(12, h - 46, w - 24, 24);
@@ -104,6 +104,12 @@ export function buildInterior(env, store) {
   const interior = new THREE.Group();
   store.add(interior);
   env.storeParts.interior = interior;
+
+  // 可交互点注册表：位置用店内局部坐标，交互层再加 store 世界偏移
+  env.interactables = env.interactables || [];
+  const addSpot = (id, title, desc, local, radius = 1.15, action = null) => {
+    env.interactables.push({ id, title, desc, local: new THREE.Vector3(...local), radius, action, store: true });
+  };
 
   const warmWall = art.toon(0xe6d8b8, { emissive: 0x4a3418, emissiveIntensity: 0.62 });
   const warmFloor = art.toon(0xd9cbae, {
@@ -133,7 +139,7 @@ export function buildInterior(env, store) {
     ctx.strokeRect(6, 6, w - 12, h - 12);
     ctx.fillStyle = '#d9f7f2';
     ctx.textAlign = 'center';
-    ctx.font = '600 28px "Yu Gothic", sans-serif';
+    ctx.font = '600 28px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText('WELCOME', w / 2, h / 2 + 10);
   });
   addBox(floorGroup, 1.0, 0.012, 0.5, art.toon(0xffffff, { map: entryMatTex }), 1.55, 0.07, 2.28);
@@ -145,7 +151,7 @@ export function buildInterior(env, store) {
   addBox(ceiling, 5.3, 0.08, 5.1, ceilingMat, 0, 2.99, 0);
   addBox(ceiling, 5.28, 0.04, 5.08, art.toon(0xd8d4c8), 0, 2.945, 0);
   const panelMat = art.neon(0xfff3d6);
-  const panelPositions = [];
+
   for (const x of [-1.3, 1.3]) {
     for (const z of [-1.8, -0.6, 0.6, 1.8]) {
       addBox(ceiling, 1.05, 0.035, 0.46, panelMat, x, 2.918, z, { cast: false });
@@ -154,7 +160,6 @@ export function buildInterior(env, store) {
       ceiling.add(g);
       const p = addPlane(g, 1.2, 0.6, art.glowMat(0xffe9bf, 0.05), 0, 0, 0, { rx: Math.PI / 2 });
       p.renderOrder = 2;
-      panelPositions.push(g);
     }
   }
   // 天花板管线
@@ -222,18 +227,25 @@ export function buildInterior(env, store) {
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     unit.add(inst);
 
-    // 玻璃门
+    // 玻璃门（整扇做成子组，交互时向外滑开）
+    const doorLeaf = new THREE.Group();
+    unit.add(doorLeaf);
     const door = art.glassMat.clone();
     door.opacity = 0.16;
-    addPlane(unit, 0.87, 1.9, door, -2.155, 1.05, 0, { ry: Math.PI / 2 });
-    addBox(unit, 0.04, 1.94, 0.06, shelfTrim, -2.158, 1.05, 0.43);
-    addBox(unit, 0.04, 1.94, 0.06, shelfTrim, -2.158, 1.05, -0.43);
-    addBox(unit, 0.04, 0.06, 0.86, shelfTrim, -2.158, 2.01, 0);
-    addBox(unit, 0.04, 0.06, 0.86, shelfTrim, -2.158, 0.1, 0);
-    addBox(unit, 0.03, 0.5, 0.045, art.toon(0x767d87), -2.13, 1.1, 0.35);
+    addPlane(doorLeaf, 0.87, 1.9, door, -2.155, 1.05, 0, { ry: Math.PI / 2 });
+    addBox(doorLeaf, 0.04, 1.94, 0.06, shelfTrim, -2.158, 1.05, 0.43);
+    addBox(doorLeaf, 0.04, 1.94, 0.06, shelfTrim, -2.158, 1.05, -0.43);
+    addBox(doorLeaf, 0.04, 0.06, 0.86, shelfTrim, -2.158, 2.01, 0);
+    addBox(doorLeaf, 0.04, 0.06, 0.86, shelfTrim, -2.158, 0.1, 0);
+    addBox(doorLeaf, 0.03, 0.5, 0.045, art.toon(0x767d87), -2.13, 1.1, 0.35);
 
     builder.grow(unit, 2.5 + i * 0.09, 0.75, { ease: 'outCubic' });
   }
+
+  env.storeParts.fridges = fridges;
+  addSpot('fridge', '冷柜饮料', '冰镇乌龙茶、果汁、矿泉水，拿一瓶？', [-1.95, 1.1, -0.5], 1.5);
+  addSpot('shelf', '中岛货架', '零食与日用品，九色商品码得整整齐齐。', [-0.55, 1.0, 0.0], 1.4);
+  addSpot('magazine', '杂志架', '最新一期的地方情报与动画杂志。', [-0.55, 1.0, 1.8], 1.3);
 
   // 冷柜灯箱
   const headerTex = fridgeHeader();
@@ -343,17 +355,16 @@ export function buildInterior(env, store) {
   counter.add(hot);
   addBox(hot, 0.74, 0.09, 0.44, art.toon(0xb9bcc0), 0, 0.04, 0);
   addBox(hot, 0.74, 0.04, 0.44, art.neon(0xffb46a), 0, 0.11, 0);
-  addBox(hot, 0.72, 0.26, 0.06, art.glassMat, 0, 0.3, 0.2);
-  addBox(hot, 0.06, 0.26, 0.4, art.glassMat, 0.36, 0.3, 0);
+  const hotLid = new THREE.Group();
+  hot.add(hotLid);
+  addBox(hotLid, 0.72, 0.26, 0.06, art.glassMat, 0, 0.3, 0.2);
+  addBox(hotLid, 0.06, 0.26, 0.4, art.glassMat, 0.36, 0.3, 0);
+  hot.userData.lid = hotLid;
+  env.storeParts.hot = hot;
   const hotFood = art.toon(0xe3a05a);
   for (let i = 0; i < 4; i++) {
     addCyl(hot, 0.035, 0.035, 0.1, hotFood, -0.25 + i * 0.16, 0.18, 0.02, { seg: 8 });
-    addSphereSafe(hot, 0.04, art.toon(0xd8874a), -0.25 + i * 0.16, 0.24, 0.02);
-  }
-  function addSphereSafe(parent, r, mat, x, y, z) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), mat);
-    m.position.set(x, y, z);
-    parent.add(m);
+    addSphere(hot, 0.04, art.toon(0xd8874a), -0.25 + i * 0.16, 0.24, 0.02, { seg: 8 });
   }
   addBox(hot, 0.5, 0.01, 0.03, art.neon(0xffd08a), 0, 0.25, 0.235, { cast: false });
   const hotSign = new THREE.MeshBasicMaterial({
@@ -364,8 +375,8 @@ export function buildInterior(env, store) {
       ctx.font = '900 42px "Arial Black", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('HOT', w / 2, 46);
-      ctx.font = '600 22px "Yu Gothic", sans-serif';
-      ctx.fillText('おでん・フライド', w / 2, 76);
+      ctx.font = '600 22px "Microsoft YaHei", "PingFang SC", sans-serif';
+      ctx.fillText('关东煮・炸物', w / 2, 76);
     }),
     toneMapped: false,
   });
@@ -374,22 +385,36 @@ export function buildInterior(env, store) {
   // 收银机
   addBox(counter, 0.34, 0.05, 0.26, art.toon(0x353b43), 1.6, 0.915, -1.66);
   addBox(counter, 0.08, 0.3, 0.08, art.toon(0x4d545e), 1.6, 1.06, -1.72);
-  const screenMat = new THREE.MeshBasicMaterial({
-    map: canvasTexture(192, 128, (ctx, w, h) => {
-      ctx.fillStyle = '#0f2b3a';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#82e7d7';
-      ctx.font = '600 18px "Arial", sans-serif';
-      ctx.fillText('HIKARI POS', 16, 32);
-      ctx.fillStyle = '#c8f6ef';
-      ctx.font = '700 26px "Arial", sans-serif';
-      ctx.fillText('¥ 1,280', 16, 74);
-      ctx.fillStyle = '#5e8f99';
-      ctx.fillText('TOTAL', 16, 104);
-    }),
-    toneMapped: false,
-  });
+  // 收银屏：可复用的 Canvas 贴图，结账时刷新内容
+  const posCanvas = document.createElement('canvas');
+  posCanvas.width = 192;
+  posCanvas.height = 128;
+  const posTex = new THREE.CanvasTexture(posCanvas);
+  posTex.colorSpace = THREE.SRGBColorSpace;
+
+  function drawPos(total, line) {
+    const ctx = posCanvas.getContext('2d');
+    ctx.fillStyle = '#0f2b3a';
+    ctx.fillRect(0, 0, 192, 128);
+    ctx.fillStyle = '#82e7d7';
+    ctx.font = '600 18px "Arial", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('HIKARI POS', 16, 32);
+    ctx.fillStyle = '#c8f6ef';
+    ctx.font = '700 26px "Arial", sans-serif';
+    ctx.fillText('¥ ' + total.toLocaleString('en-US'), 16, 74);
+    ctx.fillStyle = '#5e8f99';
+    ctx.font = '600 14px "Arial", sans-serif';
+    ctx.fillText(line || 'TOTAL', 16, 104);
+    posTex.needsUpdate = true;
+  }
+  drawPos(0, '欢迎光临');
+  env.storeParts.posScreen = { draw: drawPos };
+
+  const screenMat = new THREE.MeshBasicMaterial({ map: posTex, toneMapped: false });
   addPlane(counter, 0.3, 0.2, screenMat, 1.6, 1.28, -1.6, { rx: -0.12 });
+  addSpot('counter', '收银台', '按一下扫描商品结账。', [1.36, 1.0, -1.25], 1.4);
+  addSpot('hot', '热食柜', '关东煮和炸物还热着。', [0.68, 1.1, -1.2], 1.25);
   addBox(counter, 0.32, 0.02, 0.18, art.toon(0x6b727c), 1.34, 0.885, -1.55);
 
   // 咖啡机
@@ -439,11 +464,12 @@ export function buildInterior(env, store) {
   addBox(atm, 0.5, 0.14, 0.02, art.toon(0x8c949e), 0, 0.55, 0.256);
   addBox(atm, 0.55, 0.03, 0.02, art.neon(0x6fd3ff), 0, 1.48, 0.256, { cast: false });
   builder.drop(atm, 3.45, 0.8, { dist: 1.3, ease: 'outBack' });
+  addSpot('atm', 'ATM 取款机', '24 小时可用，不过没有卡。', [-1.85, 1.0, -1.9], 1.25);
 
   /* ---------------------------- 吊牌 ---------------------------- */
   const hangData = [
-    { title: 'ATM', sub: '24時間', bg: '#2a6fbd', x: -2.0, z: -0.2 },
-    { title: 'おでん', sub: 'HOT FOOD', bg: '#d9543f', x: -0.2, z: 0.9 },
+    { title: 'ATM', sub: '24小时', bg: '#2a6fbd', x: -2.0, z: -0.2 },
+    { title: '关东煮', sub: 'HOT FOOD', bg: '#d9543f', x: -0.2, z: 0.9 },
     { title: 'COFFEE', sub: 'HOT / ICE', bg: '#1aa7a2', x: 1.9, z: 0.6 },
   ];
   for (let i = 0; i < hangData.length; i++) {
@@ -478,16 +504,16 @@ export function buildInterior(env, store) {
   wetFloor.position.set(0.9, 0.06, 1.62);
   interior.add(wetFloor);
   const yellowMat = art.toon(0xf2c341);
-  const a = addBox(wetFloor, 0.42, 0.6, 0.02, yellowMat, 0, 0.3, -0.12, { rx: -0.26 });
-  const b = addBox(wetFloor, 0.42, 0.6, 0.02, yellowMat, 0, 0.3, 0.12, { rx: 0.26 });
+  addBox(wetFloor, 0.42, 0.6, 0.02, yellowMat, 0, 0.3, -0.12, { rx: -0.26 });
+  addBox(wetFloor, 0.42, 0.6, 0.02, yellowMat, 0, 0.3, 0.12, { rx: 0.26 });
   addPlane(wetFloor, 0.3, 0.14, new THREE.MeshBasicMaterial({
     map: canvasTexture(192, 96, (ctx, w, h) => {
       ctx.fillStyle = '#f2c341';
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = '#22262b';
-      ctx.font = '800 30px "Yu Gothic", sans-serif';
+      ctx.font = '800 30px "Microsoft YaHei", "PingFang SC", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('足元注意', w / 2, 56);
+      ctx.fillText('小心地滑', w / 2, 56);
     }),
   }), 0, 0.3, 0.135, { rx: 0.26 });
   builder.pop(wetFloor, 3.8, 0.5, { ease: 'outBack' });
@@ -535,6 +561,7 @@ export function buildInterior(env, store) {
   backGoods.castShadow = true;
   backShelf.add(backGoods);
   builder.drop(backShelf, 3.15, 0.7, { dist: 0.5, ease: 'outCubic' });
+  addSpot('backShelf', '背柜商品', '一整墙的饮料和速食。', [0.4, 1.1, -2.1], 1.3);
 
   // 后墙装饰画
   addPlane(decor, 0.5, 0.65, new THREE.MeshBasicMaterial({ map: art.textures.posters[0], toneMapped: true }), -0.65, 1.85, -2.575);
@@ -563,12 +590,12 @@ export function buildInterior(env, store) {
       ctx.lineWidth = 8;
       ctx.strokeRect(6, 6, w - 12, h - 12);
       ctx.fillStyle = '#d94f43';
-      ctx.font = '800 30px "Yu Gothic", sans-serif';
+      ctx.font = '800 30px "Microsoft YaHei", "PingFang SC", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('防犯', w / 2, 70);
+      ctx.fillText('防盗', w / 2, 70);
       ctx.fillStyle = '#3a342c';
-      ctx.font = '600 16px "Yu Gothic", sans-serif';
-      ctx.fillText('カメラ作動中', w / 2, 120);
+      ctx.font = '600 16px "Microsoft YaHei", "PingFang SC", sans-serif';
+      ctx.fillText('监控运行中', w / 2, 120);
       ctx.beginPath();
       ctx.arc(w / 2, 160, 22, 0, Math.PI * 2);
       ctx.strokeStyle = '#3a342c';

@@ -11,9 +11,9 @@ function norenTexture() {
     ctx.fillStyle = '#243b58';
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#e9edf3';
-    ctx.font = '700 56px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '700 56px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('さくら', w / 2, 92);
+    ctx.fillText('樱花', w / 2, 92);
     ctx.fillStyle = 'rgba(233,237,243,0.35)';
     ctx.fillRect(0, 0, w, 10);
     ctx.fillRect(w / 2 - 3, 0, 6, h);
@@ -29,8 +29,8 @@ function izakayaSign() {
     ctx.strokeRect(10, 10, w - 20, h - 20);
     ctx.fillStyle = '#b23a33';
     ctx.textAlign = 'center';
-    ctx.font = '800 86px "Yu Gothic", serif';
-    ['酒', '処', 'さ', 'く', 'ら'].forEach((c, i) => ctx.fillText(c, w / 2, 130 + i * 128));
+    ctx.font = '800 86px "Songti SC", "SimSun", serif';
+    ['小', '酒', '馆', '樱', '花'].forEach((c, i) => ctx.fillText(c, w / 2, 130 + i * 128));
   });
 }
 

@@ -171,7 +171,10 @@ export function buildStreet(env) {
   tactileTex2.repeat.set(18, 1);
   tactileTex2.needsUpdate = true;
   addBox(ground, 6.9, 0.014, 0.2, art.toon(0xffffff, { map: tactileTex2 }), 2.1, 0.168, -2.7, { cast: false, ry: Math.PI / 2 });
-  addBox(ground, 0.34, 0.014, 0.34, art.toon(0xffffff, { map: tactileTex }), 2.12, 0.169, 2.12, { cast: false });
+  const tactileTexCorner = tactileTex.clone();
+  tactileTexCorner.repeat.set(1, 1);
+  tactileTexCorner.needsUpdate = true;
+  addBox(ground, 0.34, 0.014, 0.34, art.toon(0xffffff, { map: tactileTexCorner }), 2.12, 0.169, 2.12, { cast: false });
 
   builder.rise(ground, 0.62, 1.0, { dist: 1.35, ease: 'outCubic' });
 
@@ -183,8 +186,9 @@ export function buildStreet(env) {
   const paintWorn = new THREE.MeshBasicMaterial({ color: 0xb6bec6, transparent: true, opacity: 0.34, toneMapped: true });
   const mid = (ROAD_IN + ROAD_OUT) / 2;
 
-  addBox(marks, 8.6, 0.014, 0.07, paintWorn, -1.95, 0.033, ROAD_IN + 0.2, { cast: false });
-  addBox(marks, 11.2, 0.014, 0.07, paintWorn, ROAD_IN + 0.2, 0.033, -0.55, { cast: false });
+  // 车道边线：铺在排水沟外侧，避免被沟槽盒吞掉
+  addBox(marks, 8.6, 0.014, 0.07, paintWorn, -1.95, 0.033, ROAD_IN + 0.38, { cast: false });
+  addBox(marks, 11.2, 0.014, 0.07, paintWorn, ROAD_IN + 0.38, 0.033, -0.55, { cast: false });
 
   for (let x = -6.0; x < 0.2; x += 1.9) {
     addBox(marks, 0.85, 0.014, 0.1, paintWorn, x, 0.033, mid, { cast: false });
@@ -261,17 +265,17 @@ export function buildStreet(env) {
   reflection(env, 0x36d3c9, 0.26, 1.2, 2.4, -1.3, 2.62, 0.0, 0.172);
   reflection(env, 0xffbd76, 0.22, 2.2, 1.8, -2.2, 2.2, 0.0, 0.172);
   reflection(env, 0xff6b52, 0.22, 0.85, 1.5, -4.2, 2.55, 0.05, 0.172);
-  reflection(env, 0xffb877, 0.18, 1.3, 2.8, -6.3, 3.2, 0.26);
-  reflection(env, 0x9ec6ff, 0.1, 0.7, 1.6, 6.05, 3.6, -0.16);
+  reflection(env, 0xffb877, 0.18, 1.2, 2.6, -5.7, 3.2, 0.26);
+  reflection(env, 0x9ec6ff, 0.1, 0.6, 1.5, 5.6, 3.6, -0.16);
   reflection(env, 0x7fd8ff, 0.1, 0.55, 1.2, 2.4, 1.55, 1.2, 0.172);
 
   const pool = (color, x, z, s, o, y = 0.05) => {
     const m = addPlane(details, s, s, art.glowMat(color, o), x, y, z, { rx: -Math.PI / 2 });
     m.renderOrder = 3;
   };
-  pool(0xffd39a, -6.0, 4.5, 4.2, 0.13);
-  pool(0xffc98a, 5.4, 2.7, 3.0, 0.1, 0.168);
-  pool(0xbcd8ff, 5.0, 4.5, 3.4, 0.09);
+  pool(0xffd39a, -5.1, 4.5, 3.8, 0.13);
+  pool(0xffc98a, 4.9, 2.7, 2.8, 0.1, 0.168);
+  pool(0xbcd8ff, 4.7, 4.5, 3.0, 0.09);
   pool(0xffb27a, -4.0, 2.7, 2.0, 0.18, 0.172);
   pool(0xffd9a8, -1.4, 1.8, 2.8, 0.12, 0.172);
   pool(0x53e0d6, -1.3, 2.62, 2.4, 0.08);
@@ -328,12 +332,12 @@ export function buildStreet(env) {
       ctx.strokeRect(8, 8, w - 16, h - 16);
       ctx.fillStyle = '#20525f';
       ctx.textAlign = 'center';
-      ctx.font = '800 34px "Yu Gothic", sans-serif';
-      ctx.fillText('さくら通り', w / 2, 74);
-      ctx.font = '600 22px "Yu Gothic", sans-serif';
-      ctx.fillText('桜町一丁目', w / 2, 116);
+      ctx.font = '800 34px "Microsoft YaHei", "PingFang SC", sans-serif';
+      ctx.fillText('樱花大道', w / 2, 74);
+      ctx.font = '600 22px "Microsoft YaHei", "PingFang SC", sans-serif';
+      ctx.fillText('樱町一号', w / 2, 116);
       ctx.font = '500 16px "Arial", sans-serif';
-      ctx.fillText('SAKURA-DORI', w / 2, 148);
+      ctx.fillText('SAKURA AVE.', w / 2, 148);
     }),
     toneMapped: true,
     side: THREE.DoubleSide,

@@ -25,14 +25,29 @@ const splatFragment = /* glsl */`
   void main() {
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     float d = length(uv);
-    float ring = smoothstep(0.98, 0.82, d) * (1.0 - smoothstep(0.82, 0.62, d));
+    float ring = (1.0 - smoothstep(0.82, 0.98, d)) * smoothstep(0.62, 0.82, d);
     float a = ring * pow(1.0 - vLife, 1.6) * uOpacity;
     if (a < 0.012) discard;
     gl_FragColor = vec4(0.70, 0.85, 1.0, a);
   }
 `;
 
+
+// 屋顶遮挡范围（世界坐标）。屋顶下的雨滴直接跳过，避免室内下雨。
+const ROOFS = [
+  { x0: -4.55, z0: -4.55, x1: 1.35, z1: 1.15 },   // 便利店
+  { x0: -6.30, z0: -6.30, x1: -5.30, z1: 1.05 },  // 左邻小酒馆
+];
+function underRoof(x, z, y) {
+  if (y < 3.2) return false;   // 高于屋顶才需要判断
+  for (const r of ROOFS) {
+    if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return true;
+  }
+  return false;
+}
+
 export function buildEffects(env) {
+
   const { art, scene, builder } = env;
   const rainRoot = new THREE.Group();
   scene.add(rainRoot);
@@ -176,7 +191,7 @@ export function buildEffects(env) {
     sprite.position.set(x, y, z);
     sprite.scale.set(scale, scale, 1);
     scene.add(sprite);
-    halos.push(mat);
+    halos.push({ mat, base: opacity });
   };
   if (env.lampHeads[0]) haloAt(0xffcf96, 2.4, 0.16, env.lampHeads[0].pos.x, env.lampHeads[0].pos.y, env.lampHeads[0].pos.z);
   if (env.lampHeads[1]) haloAt(0xbcd9ff, 1.9, 0.12, env.lampHeads[1].pos.x, env.lampHeads[1].pos.y, env.lampHeads[1].pos.z);
@@ -205,10 +220,20 @@ export function buildEffects(env) {
         d.y -= d.speed * dt;
         d.x += windX * dt;
         d.z += windZ * dt;
-        if (d.y < -0.6) {
-          d.y = 10.5 + Math.random() * 2.0;
-          d.x = -7.8 + Math.random() * 15.6;
-          d.z = -7.8 + Math.random() * 15.6;
+        if (d.y < -0.6 || underRoof(d.x, d.z, d.y)) {
+          // 重新投放到屋顶之外，循环直到落在空旷处
+          let tries = 0;
+          do {
+            d.y = 10.5 + Math.random() * 2.0;
+            d.x = -7.8 + Math.random() * 15.6;
+            d.z = -7.8 + Math.random() * 15.6;
+            tries++;
+          } while (underRoof(d.x, d.z, d.y) && tries < 12);
+          if (underRoof(d.x, d.z, d.y)) {
+            // 仍被遮住：贴到屋顶上方外沿，保证不穿过室内
+            d.y = 10.5 + Math.random() * 2.0;
+            d.x = 2.2 + Math.random() * 5.0;
+          }
         }
         if (d.x > 8) d.x -= 16;
         const o = i * 6;
@@ -246,8 +271,8 @@ export function buildEffects(env) {
     const neon = env.storeNeon || [];
     for (let i = 0; i < neon.length; i++) {
       const item = neon[i];
-      let k = 0;
-      if (t > 5.45) {
+      let k = 0.1;
+      if (t > 5.1) {
         if (t < 6.45) {
           const step = Math.floor(t * 16);
           k = hash(step + i * 3.3) > 0.52 ? 1 : 0.16;
@@ -261,8 +286,8 @@ export function buildEffects(env) {
 
     // 水雾光晕轻微呼吸
     for (let i = 0; i < halos.length; i++) {
-      const base = 0.1 + (i * 0.02);
-      halos[i].opacity = (base + Math.sin(t * 1.7 + i) * 0.015) * Math.min(1, Math.max(0, (t - 6.3) / 1.5));
+      const h = halos[i];
+      h.mat.opacity = (h.base + Math.sin(t * 1.7 + i) * 0.015) * Math.min(1, Math.max(0, (t - 6.3) / 1.5));
     }
   }
 
@@ -275,9 +300,9 @@ export function buildEffects(env) {
     elapsed = t;
     splatMat.uniforms.uTime.value = t;
     const neon = env.storeNeon || [];
-    for (const item of neon) {
-      const k = 0.93 + 0.07 * Math.sin(t * 4.2 + neon.indexOf(item));
-      item.mat.color.copy(item.base).multiplyScalar(k);
+    for (let i = 0; i < neon.length; i++) {
+      const k = 0.93 + 0.07 * Math.sin(t * 4.2 + i);
+      neon[i].mat.color.copy(neon[i].base).multiplyScalar(k);
     }
   }
 

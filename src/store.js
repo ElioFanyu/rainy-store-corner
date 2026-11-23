@@ -1,12 +1,32 @@
 import * as THREE from 'three';
 import {
-  addBox, addCyl, addPlane, addTube, addOutline, canvasTexture, PAL,
+  addBox, addCyl, addPlane, addTube, canvasTexture,
 } from './core.js';
 import { buildInterior } from './interior.js';
 
 /* ------------------------------------------------------------------ *
  *  便利店建筑：外墙、玻璃幕、雨棚、招牌、屋顶
  * ------------------------------------------------------------------ */
+
+// 老浏览器没有 ctx.roundRect，退化成直角矩形，避免整张招牌绘制抛错
+function roundRect(ctx, x, y, w, h, r) {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
 
 function signTexture() {
   return canvasTexture(1536, 230, (ctx, w, h) => {
@@ -22,15 +42,15 @@ function signTexture() {
     ctx.fillRect(0, h - 20, w, 4);
 
     ctx.fillStyle = '#f4ffff';
-    ctx.font = '800 92px "Arial Black", "Yu Gothic", sans-serif';
+    ctx.font = '800 92px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('HIKARI', 62, 118);
-    ctx.font = '600 27px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '600 27px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillStyle = '#9fe7df';
     ctx.fillText('CONVENIENCE  STORE', 66, 158);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 158px "Arial Black", "Yu Gothic", sans-serif';
+    ctx.font = '900 158px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('MART', 900, 158);
 
@@ -40,17 +60,16 @@ function signTexture() {
     const by = 44;
     const bw = 214;
     const bh = 142;
-    ctx.beginPath();
-    ctx.roundRect(bx, by, bw, bh, 14);
+    roundRect(ctx, bx, by, bw, bh, 14);
     ctx.fill();
     ctx.fillStyle = '#fff7e8';
     ctx.font = '900 100px "Arial Black", sans-serif';
     ctx.fillText('24H', bx + bw / 2, by + 112);
 
     ctx.fillStyle = '#b9ede7';
-    ctx.font = '500 22px "Yu Gothic", sans-serif';
+    ctx.font = '500 22px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('年中無休', w - 60, 202);
+    ctx.fillText('全年无休', w - 60, 202);
   });
 }
 
@@ -67,8 +86,7 @@ function verticalSignTexture() {
     const letters = ['M', 'A', 'R', 'T'];
     letters.forEach((c, i) => ctx.fillText(c, w / 2, 138 + i * 126));
     ctx.fillStyle = '#df4b3f';
-    ctx.beginPath();
-    ctx.roundRect(28, 610, w - 56, 104, 10);
+    roundRect(ctx, 28, 610, w - 56, 104, 10);
     ctx.fill();
     ctx.fillStyle = '#fff6e6';
     ctx.font = '900 70px "Arial Black", sans-serif';
@@ -80,9 +98,9 @@ function canopyText() {
   return canvasTexture(1024, 64, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#eafefb';
-    ctx.font = '700 30px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '700 30px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('HIKARI MART  ·  ひかりマート  ·  OPEN 24 HOURS', w / 2, 42);
+    ctx.fillText('HIKARI MART  ·  光之便利店  ·  24 小时营业', w / 2, 42);
   });
 }
 
@@ -90,12 +108,12 @@ function doorDecal() {
   return canvasTexture(384, 96, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '600 34px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '600 34px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('自 動 ド ア', w / 2, 44);
+    ctx.fillText('自  动  门', w / 2, 44);
     ctx.fillStyle = 'rgba(140,220,215,0.9)';
-    ctx.font = '500 20px "Yu Gothic", sans-serif';
-    ctx.fillText('AUTOMATIC DOOR', w / 2, 76);
+    ctx.font = '500 20px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('AUTOMATIC SENSOR DOOR', w / 2, 76);
   });
 }
 
@@ -106,11 +124,11 @@ function windowPoster(title, sub, accent) {
     ctx.fillStyle = accent;
     ctx.fillRect(0, 0, w, 70);
     ctx.fillStyle = '#fff';
-    ctx.font = '700 34px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '700 34px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(title, w / 2, 50);
     ctx.fillStyle = '#3b342c';
-    ctx.font = '600 30px "Yu Gothic", sans-serif';
+    ctx.font = '600 30px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText(sub, w / 2, 130);
     ctx.fillStyle = '#eadfcd';
     ctx.fillRect(26, 160, 204, 8);
@@ -159,7 +177,7 @@ export function buildStore(env) {
   };
 
   // 左墙、后墙
-  const leftWall = wallGrow(0.2, 3.02, 5.4, -2.8, 0, 1.72);
+  wallGrow(0.2, 3.02, 5.4, -2.8, 0, 1.72);
   wallGrow(5.6, 3.02, 0.2, 0, -2.7, 1.8);
 
   // 结构柱
@@ -223,27 +241,39 @@ export function buildStore(env) {
   addBox(mullions, 5.5, 0.07, 0.1, mullMat, 0, 1.98, 2.7);
   addBox(mullions, 0.1, 0.07, 5.3, mullMat, 2.79, 1.98, 0);
 
-  // 自动门
+  // 自动门：两扇对开门，交互时可向两侧滑开
   const door = new THREE.Group();
   door.position.set(1.55, 0.06, 2.68);
   glazing.add(door);
-  addBox(door, 1.06, 0.06, 0.13, mullMat, 0, 2.37, 0);
+  addBox(door, 1.18, 0.06, 0.13, mullMat, 0, 2.37, 0);
   const panelMat = art.glassMat.clone();
   panelMat.opacity = 0.12;
-  const panel = (x, z) => {
-    addPlane(door, 0.44, 2.2, panelMat, x, 1.16, z);
-    addBox(door, 0.05, 2.24, 0.06, mullMat, x - 0.245, 1.16, z);
-    addBox(door, 0.05, 2.24, 0.06, mullMat, x + 0.245, 1.16, z);
-    addBox(door, 0.49, 0.05, 0.06, mullMat, x, 2.28, z);
-    addBox(door, 0.49, 0.05, 0.06, mullMat, x, 0.05, z);
-    addBox(door, 0.03, 0.5, 0.05, whiteMetal, x + 0.19, 1.15, z + 0.04);
+  const doorLeaves = [];
+  const panel = (side) => {
+    const leaf = new THREE.Group();
+    leaf.position.x = side * 0.27;
+    door.add(leaf);
+    const x = 0;
+    const z = side < 0 ? 0.012 : 0.045;
+    addPlane(leaf, 0.44, 2.2, panelMat, x, 1.16, z);
+    addBox(leaf, 0.05, 2.24, 0.06, mullMat, x - 0.245, 1.16, z);
+    addBox(leaf, 0.05, 2.24, 0.06, mullMat, x + 0.245, 1.16, z);
+    addBox(leaf, 0.49, 0.05, 0.06, mullMat, x, 2.28, z);
+    addBox(leaf, 0.49, 0.05, 0.06, mullMat, x, 0.05, z);
+    addBox(leaf, 0.03, 0.5, 0.05, whiteMetal, x + side * -0.19, 1.15, z + 0.04);
+    doorLeaves.push({ group: leaf, closedX: side * 0.27, sign: side });
   };
-  panel(-0.27, 0.012);
-  panel(0.27, 0.045);
+  panel(-1);
+  panel(1);
   const decalMat = new THREE.MeshBasicMaterial({
     map: doorDecal(), transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
   });
   addPlane(door, 1.0, 0.25, decalMat, 0, 2.1, 0.07);
+
+  // 供交互层驱动：0 = 关，1 = 全开
+  env.storeParts.door = door;
+  door.userData.leaves = doorLeaves;
+  door.userData.openAmount = 0;
 
   builder.drop(glazing, 4.25, 0.95, { dist: 1.7, ease: 'outCubic' });
 
@@ -255,9 +285,9 @@ export function buildStore(env) {
     ctx.lineWidth = 10;
     ctx.strokeRect(10, 10, w - 20, h - 20);
     ctx.fillStyle = '#cfe8e2';
-    ctx.font = '600 54px "Yu Gothic", "Meiryo", sans-serif';
+    ctx.font = '600 54px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('いらっしゃいませ', w / 2, h / 2 + 18);
+    ctx.fillText('欢 迎 光 临', w / 2, h / 2 + 18);
   });
   const storeDecor = new THREE.Group();
   store.add(storeDecor);
@@ -269,7 +299,7 @@ export function buildStore(env) {
     map: windowPoster('24H', 'OPEN', '#e0554a'), transparent: true, depthWrite: false, toneMapped: false,
   });
   const posterMat2 = new THREE.MeshBasicMaterial({
-    map: windowPoster('ATM', '24時間', '#1aa7a2'), transparent: true, depthWrite: false, toneMapped: false,
+    map: windowPoster('ATM', '24小时', '#1aa7a2'), transparent: true, depthWrite: false, toneMapped: false,
   });
   addPlane(storeDecor, 0.44, 0.55, posterMat1, -2.2, 1.35, 2.716);
   addPlane(storeDecor, 0.4, 0.5, posterMat2, -1.72, 1.35, 2.716);
@@ -364,7 +394,7 @@ export function buildStore(env) {
 
   // 天线、排气管
   addCyl(roof, 0.02, 0.03, 1.25, darkMetal, -1.95, 4.0, 1.9, { seg: 6 });
-  addBox(roof, 0.7, 0.02, 0.02, darkMetal, -1.6, 4.4, 1.9, { rotY: 0, rz: 0 });
+  addBox(roof, 0.7, 0.02, 0.02, darkMetal, -1.6, 4.4, 1.9);
   addBox(roof, 0.5, 0.02, 0.02, darkMetal, -1.95, 4.2, 1.9);
   addCyl(roof, 0.09, 0.09, 0.55, steelMat, 0.3, 3.62, 2.4, { seg: 10 });
   addCyl(roof, 0.13, 0.13, 0.06, darkMetal, 0.3, 3.92, 2.4, { seg: 10 });
@@ -416,11 +446,12 @@ export function buildStore(env) {
   // 屋顶到招牌的检修梯
   const ladder = new THREE.Group();
   store.add(ladder);
+  // 挂在东立面玻璃外侧（x ≈ 3.02），不扎进幕墙
   for (let i = 0; i < 6; i++) {
-    addBox(ladder, 0.6, 0.03, 0.03, art.toon(0x646c77), 2.72, 2.45 + i * 0.25, 2.5);
+    addBox(ladder, 0.03, 0.03, 0.34, art.toon(0x646c77), 3.06, 2.45 + i * 0.25, 2.5);
   }
-  addBox(ladder, 0.03, 1.5, 0.03, art.toon(0x646c77), 2.44, 3.15, 2.5);
-  addBox(ladder, 0.03, 1.5, 0.03, art.toon(0x646c77), 3.0, 3.15, 2.5);
+  addBox(ladder, 0.03, 1.5, 0.03, art.toon(0x646c77), 3.06, 3.15, 2.33);
+  addBox(ladder, 0.03, 1.5, 0.03, art.toon(0x646c77), 3.06, 3.15, 2.67);
   builder.drop(ladder, 5.0, 0.75, { dist: 0.9, ease: 'outCubic' });
 }
 
@@ -436,7 +467,7 @@ export function makeVendingTexture(accent = '#e0554a') {
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 54px "Arial Black", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('DRINK', w / 2, 78);
+    ctx.fillText('逸品', w / 2, 78);
     ctx.fillStyle = '#252b33';
     ctx.fillRect(30, 150, w - 60, 360);
     ctx.fillStyle = '#343b45';
@@ -460,7 +491,7 @@ export function makeVendingTexture(accent = '#e0554a') {
     ctx.fillStyle = '#9fe0da';
     ctx.fillRect(320, 560, 110, 12);
     ctx.fillStyle = '#dbe2e6';
-    ctx.font = '500 20px "Yu Gothic", sans-serif';
-    ctx.fillText('つめた〜い', w / 2, 730);
+    ctx.font = '500 20px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('冰镇的', w / 2, 730);
   });
 }

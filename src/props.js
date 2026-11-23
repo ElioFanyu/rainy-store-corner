@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { addBox, addCyl, addPlane, addSphere, addTube, addWire, canvasTexture, PAL } from './core.js';
+import { addBox, addCyl, addPlane, addSphere, addTube, addWire, canvasTexture } from './core.js';
 import { makeVendingTexture } from './store.js';
 
 /* ------------------------------------------------------------------ *
  *  街道道具：自动贩卖机、自行车、伞架、垃圾桶、公告栏、电线杆…
  * ------------------------------------------------------------------ */
 
-const FONT = '"Yu Gothic", "Meiryo", sans-serif';
+const FONT = '"Microsoft YaHei", "PingFang SC", sans-serif';
 
 function signCanvas(w, h, draw) {
   return canvasTexture(w, h, draw);
@@ -17,13 +17,15 @@ export function buildProps(env) {
   const props = new THREE.Group();
   root.add(props);
   env.props = props;
-  env.lampHeads = [];
+  env.lampHeads = env.lampHeads || [];
+  env.interactables = env.interactables || [];
+  const spot = (id, title, desc, world, radius = 1.3, action = null) => {
+    env.interactables.push({ id, title, desc, world: new THREE.Vector3(...world), radius, action });
+  };
 
-  const white = art.toon(0xe8ecee);
   const offWhite = art.toon(0xd9d7ce);
   const darkMetal = art.toon(0x393f48);
   const steel = art.toon(0x878f99);
-  const orange = art.toon(0xe07a3e);
 
   /* --------------------------- 自动贩卖机 --------------------------- */
   const vending = new THREE.Group();
@@ -44,6 +46,8 @@ export function buildProps(env) {
   const spill = addPlane(vending, 1.9, 1.2, art.glowMat(0xffb27a, 0.3), 0, 0.012, 0.63, { rx: -Math.PI / 2 });
   spill.renderOrder = 3;
   builder.rise(vending, 5.82, 1.0, { dist: 1.8, ease: 'outBack' });
+  env.storeParts.vending = vending;
+  spot('vending', '自动贩卖机', '投币口叮当一响，掉下一罐热咖啡。', [-3.92, 1.2, 2.35], 1.5);
 
   /* ----------------------------- 自行车 ----------------------------- */
   const bike = new THREE.Group();
@@ -92,7 +96,7 @@ export function buildProps(env) {
   addSphere(bike, 0.03, art.toon(0xc9a24a), 0.47, 1.06, 0.15);
   // 前筐
   const basketMat = art.toon(0x51586a);
-  addBox(bike, 0.3, 0.22, 0.24, art.toon(0x39424d, { transparent: true, opacity: 0.45 }), 0.7, 0.83, 0);
+  addBox(bike, 0.3, 0.22, 0.24, art.toon(0x39424d, { transparent: true, opacity: 0.45, depthWrite: false }), 0.7, 0.83, 0);
   addBox(bike, 0.32, 0.02, 0.26, basketMat, 0.7, 0.72, 0);
   for (let i = 0; i < 4; i++) {
     addBox(bike, 0.32, 0.012, 0.012, basketMat, 0.7, 0.74 + i * 0.05, 0.125);
@@ -107,6 +111,7 @@ export function buildProps(env) {
   // 车锁
   addTube(bike, P(-0.5, 0.48), P(0.35, 0.75), 0.009, art.toon(0xd94f43), 4);
   builder.rise(bike, 6.06, 0.95, { dist: 1.3, ease: 'outBack' });
+  spot('bike', '自行车', '没上锁，车筐里还有一张便利店小票。', [-2.45, 1.0, 1.58], 1.25);
 
   /* ----------------------------- 垃圾桶 ----------------------------- */
   const binTex = (color, label) => signCanvas(256, 192, (ctx, w, h) => {
@@ -129,8 +134,8 @@ export function buildProps(env) {
     ctx.stroke();
   });
   const binData = [
-    { x: -1.55, color: '#2f7fa3', label: 'かん・びん' },
-    { x: -1.16, color: '#c57a3a', label: 'ペットボトル' },
+    { x: -1.55, color: '#2f7fa3', label: '瓶罐' },
+    { x: -1.16, color: '#c57a3a', label: '塑料瓶' },
   ];
   for (const b of binData) {
     const bin = new THREE.Group();
@@ -207,6 +212,7 @@ export function buildProps(env) {
     addPlane(board, 0.3, 0.4, mat, p.x, p.y, 0.04, { ry: p.ry });
   }
   builder.rise(board, 5.98, 0.9, { dist: 1.2, ease: 'outBack' });
+  spot('board', '街角公告栏', '町内会通知、猫的照片、招租广告。', [-5.02, 1.3, 2.3], 1.35);
 
   /* ----------------------------- 路牌 ----------------------------- */
   const pSign = new THREE.Group();
@@ -223,7 +229,7 @@ export function buildProps(env) {
     ctx.textAlign = 'center';
     ctx.font = '900 148px "Arial Black", sans-serif';
     ctx.fillText('P', w / 2, 168);
-    ctx.font = '700 30px "Yu Gothic", sans-serif';
+    ctx.font = '700 30px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.fillText('24H', w / 2, 218);
   });
   addPlane(pSign, 0.46, 0.46, new THREE.MeshBasicMaterial({ map: pTex, toneMapped: true }), 0, 1.92, 0.04);
@@ -251,9 +257,9 @@ export function buildProps(env) {
     ctx.fillStyle = '#c8403b';
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = '700 46px "Yu Gothic", sans-serif';
+    ctx.font = '700 46px "Microsoft YaHei", "PingFang SC", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('止まれ', w / 2, 112);
+    ctx.fillText('停车让行', w / 2, 112);
   });
   addPlane(stopSign, 0.62, 0.62, new THREE.MeshBasicMaterial({
     map: stopTex, transparent: true, toneMapped: true, side: THREE.DoubleSide,
@@ -266,8 +272,8 @@ export function buildProps(env) {
     ctx.strokeRect(6, 6, w - 12, h - 12);
     ctx.fillStyle = '#f2fbf4';
     ctx.textAlign = 'center';
-    ctx.font = '600 40px "Yu Gothic", sans-serif';
-    ctx.fillText('さくら通り', w / 2, 60);
+    ctx.font = '600 40px "Microsoft YaHei", "PingFang SC", sans-serif';
+    ctx.fillText('樱花大道', w / 2, 60);
   });
   addPlane(stopSign, 0.64, 0.12, new THREE.MeshBasicMaterial({ map: streetTex, toneMapped: true }), 0, 1.72, 0.052);
   builder.rise(stopSign, 6.48, 0.8, { dist: 1.1, ease: 'outBack' });
@@ -393,9 +399,9 @@ export function buildProps(env) {
         ctx.fillStyle = '#e8c94e';
         ctx.fillRect(0, 0, w, hh);
         ctx.fillStyle = '#2a2a26';
-        ctx.font = '700 30px "Yu Gothic", sans-serif';
+        ctx.font = '700 30px "Microsoft YaHei", "PingFang SC", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('感電注意', w / 2, 78);
+        ctx.fillText('高压危险', w / 2, 78);
       }),
       toneMapped: true,
     }), 0, 3.2, 0.21);
@@ -414,7 +420,7 @@ export function buildProps(env) {
   }
 
   utilityPole(-6.02, 2.16, 7.3, 5.45, 1, 0xffd39a);
-  utilityPole(2.18, -5.85, 6.9, 5.6, -1, 0xcfe4ff);
+  utilityPole(2.18, -5.35, 6.9, 5.6, -1, 0xcfe4ff);
 
   // 电线：两根杆之间
   const wireSpan = (a, b, sag, r = 0.012) => {

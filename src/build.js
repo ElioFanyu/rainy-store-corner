@@ -77,7 +77,15 @@ export class Builder {
 
     for (const it of this.items) {
       const raw = (t - it.at) / it.dur;
-      if (raw <= 0) continue;
+      if (raw <= 0) {
+        // 时间回退（setTime 调试）时，未到场的构件必须重新隐藏
+        if (it.obj.visible) {
+          it.obj.visible = false;
+          it.obj.position.copy(it.basePos);
+          it.obj.scale.copy(it.baseScale);
+        }
+        continue;
+      }
       const p = Math.min(1, raw);
       const e = it.ease(p);
       it.obj.visible = true;
@@ -95,7 +103,13 @@ export class Builder {
         it.obj.scale.x = it.baseScale.x;
         it.obj.scale.z = it.baseScale.z;
       } else if (it.kind === 'pop') {
-        it.obj.scale.setScalar(it.startScale + (it.baseScale.x - it.startScale) * e);
+        // 逐轴插值，避免把非均匀缩放的组压成等比
+        const k = it.startScale;
+        it.obj.scale.set(
+          k + (it.baseScale.x - k) * e,
+          k + (it.baseScale.y - k) * e,
+          k + (it.baseScale.z - k) * e,
+        );
       }
 
       if (p >= 1) {
@@ -117,8 +131,7 @@ export class Builder {
       for (const it of this.items) {
         it.obj.visible = true;
         it.obj.position.copy(it.basePos);
-        if (it.kind !== 'grow' && it.kind !== 'pop') it.obj.scale.copy(it.baseScale);
-        else it.obj.scale.copy(it.baseScale);
+        it.obj.scale.copy(it.baseScale);
       }
       this.endCallbacks.forEach((fn) => fn());
     }
